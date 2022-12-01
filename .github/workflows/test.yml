@@ -26,8 +26,13 @@ jobs:
 
       - name: "测试"
         run: go test -v ./...
+
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: matoous/golangci-lint-action@v1.23.3
-        name: "golangci-lint 静态检查"
+      - name: "克隆代码"
+        uses: actions/checkout@v3
+        
+      - name: "golangci-lint 静态检查"
+        uses: golangci/golangci-lint-action@v3.3.1
+
