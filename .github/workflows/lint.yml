@@ -10,7 +10,7 @@ on:
     branches:
       - main
 jobs:
-  "静态检测":
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

@@ -3,7 +3,7 @@ name: "欢迎你"
 on: [pull_request_target, issues]
 
 jobs:
-  "欢迎入坑":
+  greeting:
     runs-on: ubuntu-latest
     permissions:
       issues: write
