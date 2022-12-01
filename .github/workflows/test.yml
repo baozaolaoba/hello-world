@@ -10,7 +10,7 @@ on:
     branches:
       - main
 jobs:
-  test:
+  "代码测试":
     runs-on: ubuntu-latest
     steps:
       - name: "克隆代码"
