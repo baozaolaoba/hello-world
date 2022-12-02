@@ -40,3 +40,40 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: "k8s设置context"
+        uses: Azure/k8s-set-context@v3.0
+        with:
+          # Acceptable values: generic or arc
+          cluster-type: generic
+          # Acceptable values: kubeconfig or service-account or service-principal
+          method: kubeconfig
+          # Contents of kubeconfig file
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+          # If your kubeconfig has multiple contexts, use this field to use a specific context, otherwise the default one would be chosen
+          context: default
+
+      - name: Easy Docker - install, login, build, mutiplatform, push, minimal configuration
+        # You may pin to the exact commit or the version.
+        # uses: LuckyTurtleDev/easy-docker-action@4242fba1bf891877a012157b0c9b3e3c8961d829
+        uses: LuckyTurtleDev/easy-docker-action@v1.1
+        with:
+          # The shell to run the build-script with.
+          shell: docker pull '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}'
+          # comma separated list of platforms to build docker image for. For example "linux/amd64,linux/arm/v6,linux/arm/v7"
+          platforms: linux/amd64
+          # password for Github Container Registry. Regular secrets.GITHUB_TOKEN is used.
+          ghcr_password:  ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to Kubernetes cluster
+        uses: Azure/k8s-deploy@v4.7
+        with:
+          # Choose the target Kubernetes namespace. If the namespace is not provided, the commands will run in the default namespace.
+          namespace: baozaolaoba
+          # Path to the manifest files which will be used for deployment.
+          manifests: deploy.yaml
+          # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
+          images: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}'
+          # deploy, promote, or reject
+          action: deploy
+      
