@@ -52,18 +52,6 @@ jobs:
           kubeconfig: ${{ secrets.KUBECONFIG }}
           # If your kubeconfig has multiple contexts, use this field to use a specific context, otherwise the default one would be chosen
           context: default
-
-      - name: Easy Docker - install, login, build, mutiplatform, push, minimal configuration
-        # You may pin to the exact commit or the version.
-        # uses: LuckyTurtleDev/easy-docker-action@4242fba1bf891877a012157b0c9b3e3c8961d829
-        uses: LuckyTurtleDev/easy-docker-action@v1.1
-        with:
-          # The shell to run the build-script with.
-          shell: docker pull '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}'
-          # comma separated list of platforms to build docker image for. For example "linux/amd64,linux/arm/v6,linux/arm/v7"
-          platforms: linux/amd64
-          # password for Github Container Registry. Regular secrets.GITHUB_TOKEN is used.
-          ghcr_password:  ${{ secrets.GITHUB_TOKEN }}
           
       - name: Create secret in Kubernetes cluster
         uses: Azure/k8s-create-secret@v4.0
