@@ -64,6 +64,18 @@ jobs:
           platforms: linux/amd64
           # password for Github Container Registry. Regular secrets.GITHUB_TOKEN is used.
           ghcr_password:  ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Create secret in Kubernetes cluster
+        uses: Azure/k8s-create-secret@v4.0
+        with:
+          # Name of the secret. You can use this secret name in the Kubernetes YAML configuration file.
+          secret-name: docker-login
+          # Container Registry URL
+          container-registry-url: ${{ env.REGISTRY }}
+          # Container Registry user name
+          container-registry-username: ${{ github.actor }}
+          # Container Registry password
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Deploy to Kubernetes cluster
         uses: Azure/k8s-deploy@v4.7
@@ -74,6 +86,8 @@ jobs:
           manifests: deploy.yaml
           # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
           images: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}'
+          # Name of a docker-registry secret that has already been set up within the cluster. Each of these secret names are added under imagePullSecrets field for the workloads found in the input manifest files
+          imagepullsecrets: docker-login
           # deploy, promote, or reject
           action: deploy
       
