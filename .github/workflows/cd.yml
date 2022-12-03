@@ -51,7 +51,7 @@ jobs:
           # Contents of kubeconfig file
           kubeconfig: ${{ secrets.KUBECONFIG }}
           
-      - name: Create secret in Kubernetes cluster
+      - name: "创建k8s密钥"
         uses: Azure/k8s-create-secret@v4.0
         with:
           # Name of the secret. You can use this secret name in the Kubernetes YAML configuration file.
@@ -63,7 +63,10 @@ jobs:
           # Container Registry password
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Deploy to Kubernetes cluster
+      - name: "替换deploy.yaml中的image占位符"
+        run: sed -i 's/__IMAGE__/${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tags }}' deploy.yaml
+        
+      - name: "部署到k8s集群"
         uses: Azure/k8s-deploy@v4.7
         with:
           # Choose the target Kubernetes namespace. If the namespace is not provided, the commands will run in the default namespace.
