@@ -12,6 +12,8 @@ env:
   IMAGE_NAME: ${{ github.repository }}
   # kubernetes的namespace
   NAMESPACE: hello
+  # 仓库中的kubernetes部署文件名
+  DEPLOY_FILE: deploy.yaml
 
 jobs:
   build-and-push-image:
@@ -26,12 +28,12 @@ jobs:
       
       # 通过shell中的字符串截断,GITHUB_REF中获取tag
       # GITHUB_REF的内容为refs/tags/v1.0.0,#refs/*/中的#表示保留截取之后的后半段,refs/*/匹配的正好是refs/tags/
-      # - name: "获取tag"
-      #   id: vars
-      #   run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: "获取tag"
+        id: git-tag
+        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
 
-      # 强大的工具库,可利用${{ steps.meta.outputs.tag }}获取tag, 和前面注释的"获取tag"在功能上有重合
+      # 强大的工具库,主要的用法是提取git信息,供后续action使用(特别是docker push)
       - name: "从git中获取信息,供推送image使用"
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
@@ -82,9 +84,11 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
 
       # 用动态信息(image地址)替换yaml中的占位符(__IMAGE__)
-      # TODO:也有一个action专门用来做替换的,需要找找, 顺便将命名空间也替换了
-      - name: "替换deploy.yaml中的image占位符"
-        run: sed -i 's#__IMAGE__#${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}#' deploy.yaml
+      # TODO:也有一个action专门用来做替换的,需要找找, 还没找到,可以考虑自己写一个
+      - name: "替换kubernetes部署配置中的占位符"
+        run: |
+          sed -i 's#__IMAGE__#${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git-tag.outputs.tag }}#' ${{ env.DEPLOY_FILE }}
+          sed -i 's#__NAMESPACE__#${{ env.NAMESPACE }}#' ${{ env.DEPLOY_FILE }}
           
       # 部署, 和github交互的token要有写权限,默认的github.token只有读权限;另外namespace会做校验,需要和上面保持一致
       - name: "部署到k8s集群"
@@ -95,7 +99,7 @@ jobs:
           # Path to the manifest files which will be used for deployment.
           manifests: deploy.yaml
           # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
-          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
+          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git-tag.outputs.tag }}
           pull-images: true
           imagepullsecrets: docker-login
           # deploy, promote, or reject
