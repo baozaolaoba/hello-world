@@ -66,6 +66,11 @@ jobs:
           container-registry-username: ${{ github.actor }}
           # Container Registry password
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: "下载image"
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
 
       - name: "替换deploy.yaml中的image占位符"
         run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}#' deploy.yaml
