@@ -50,8 +50,6 @@ jobs:
           method: kubeconfig
           # Contents of kubeconfig file
           kubeconfig: ${{ secrets.KUBECONFIG }}
-          # If your kubeconfig has multiple contexts, use this field to use a specific context, otherwise the default one would be chosen
-          context: default
           
       - name: Create secret in Kubernetes cluster
         uses: Azure/k8s-create-secret@v4.0
