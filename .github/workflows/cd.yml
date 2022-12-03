@@ -64,7 +64,7 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "替换deploy.yaml中的image占位符"
-        run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.GITHUB_REF_NAME }}#' deploy.yaml
+        run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.GITHUB_RE:10 }}#' deploy.yaml
         
       - name: "部署到k8s集群"
         uses: Azure/k8s-deploy@v4.7
@@ -74,7 +74,7 @@ jobs:
           # Path to the manifest files which will be used for deployment.
           manifests: deploy.yaml
           # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.GITHUB_REF_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.GITHUB_REF:10 }}
           # Name of a docker-registry secret that has already been set up within the cluster. Each of these secret names are added under imagePullSecrets field for the workloads found in the input manifest files
           imagepullsecrets: docker-login
           # deploy, promote, or reject
