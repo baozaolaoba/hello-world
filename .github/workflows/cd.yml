@@ -6,8 +6,12 @@ on:
       - v*
 
 env:
-  REGISTRY: ghcr.io
+  # 容器注册中心
+  CONTAINER_REGISTRY: ghcr.io
+  # 镜像名,取的是仓库名
   IMAGE_NAME: ${{ github.repository }}
+  # kubernetes的namespace
+  NAMESPACE: hello
 
 jobs:
   build-and-push-image:
@@ -19,24 +23,30 @@ jobs:
     steps:
       - name: "克隆代码"
         uses: actions/checkout@v3
-        
-      - name: "获取tag"
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      
+      # 通过shell中的字符串截断,GITHUB_REF中获取tag
+      # GITHUB_REF的内容为refs/tags/v1.0.0,#refs/*/中的#表示保留截取之后的后半段,refs/*/匹配的正好是refs/tags/
+      # - name: "获取tag"
+      #   id: vars
+      #   run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
 
-      - name: "登录github容器注册中心"
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: "为image打包准备元信息"
+      # 强大的工具库,可利用${{ steps.meta.outputs.tag }}获取tag, 和前面注释的"获取tag"在功能上有重合
+      - name: "从git中获取信息,供推送image使用"
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}
+          
+      # docker login的固定写法
+      - name: "登录github容器注册中心"
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
+      # 从Dockerfile中构建image,并推送至容器注册中心
       - name: "构建image并推送至注册中心"
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
@@ -45,7 +55,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: "k8s设置context"
+      # 访问kubernetes集群的一种方式,官方方式
+      - name: "kubernetes设置context"
         uses: Azure/k8s-set-context@v3.0
         with:
           # Acceptable values: generic or arc
@@ -55,32 +66,36 @@ jobs:
           # Contents of kubeconfig file
           kubeconfig: ${{ secrets.KUBECONFIG }}
 
-      - name: "创建k8s密钥"
+      # 创建secret, 特别要注意namespace和pod要匹配,这个secret是给pod拉image时用的,具体方式是指定pod的imagePullSecrets
+      - name: "创建kubernetes的secret"
         uses: Azure/k8s-create-secret@v4.0
         with:
           # Choose the target Kubernetes namespace. If the namespace is not provided, the commands will run in the default namespace.
-          namespace: hello
+          namespace: ${{ env.NAMESPACE }}
           # Name of the secret. You can use this secret name in the Kubernetes YAML configuration file.
           secret-name: docker-login
           # Container Registry URL
-          container-registry-url: ${{ env.REGISTRY }}
+          container-registry-url: ${{ env.CONTAINER_REGISTRY }}
           # Container Registry user name
           container-registry-username: ${{ github.actor }}
           # Container Registry password
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
 
+      # 用动态信息(image地址)替换yaml中的占位符(__IMAGE__)
+      # TODO:也有一个action专门用来做替换的,需要找找, 顺便将命名空间也替换了
       - name: "替换deploy.yaml中的image占位符"
-        run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}#' deploy.yaml
+        run: sed -i 's#__IMAGE__#${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}#' deploy.yaml
           
+      # 部署, 和github交互的token要有写权限,默认的github.token只有读权限;另外namespace会做校验,需要和上面保持一致
       - name: "部署到k8s集群"
         uses: Azure/k8s-deploy@v4.7
         with:
           # Choose the target Kubernetes namespace. If the namespace is not provided, the commands will run in the default namespace.
-          namespace: hello
+          namespace: ${{ env.NAMESPACE }}
           # Path to the manifest files which will be used for deployment.
           manifests: deploy.yaml
           # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
           pull-images: true
           imagepullsecrets: docker-login
           # deploy, promote, or reject
@@ -89,4 +104,4 @@ jobs:
           force: true
           # Annotate the target namespace
           private-cluster: false
-
+          token: ${{ secrets.GITHUB_TOKEN }}
