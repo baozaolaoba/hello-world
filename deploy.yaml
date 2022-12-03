@@ -58,12 +58,6 @@ spec:
           successThreshold: 1
           failureThreshold: 3
           periodSeconds: 10
-        env:
-        - name: DB_HOST
-          valueFrom:
-            configMapKeyRef:
-              name: hello
-              key: DB_HOST
         ports:
         - containerPort:  80
           name:  hello
