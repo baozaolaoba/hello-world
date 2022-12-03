@@ -108,4 +108,3 @@ jobs:
           force: true
           # Annotate the target namespace
           private-cluster: false
-          token: ${{ secrets.GITHUB_TOKEN }}
