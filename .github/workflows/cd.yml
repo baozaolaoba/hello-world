@@ -51,6 +51,12 @@ jobs:
           # Contents of kubeconfig file
           kubeconfig: ${{ secrets.KUBECONFIG }}
           
+      - name: "调试,打印环境变量"
+        run: |
+          echo ${{ github.GITHUB_REF }}
+          echo ${{ github.GITHUB_REF_NAME }}
+          echo ${{ github.GITHUB_REF:10 }}
+          
       - name: "创建k8s密钥"
         uses: Azure/k8s-create-secret@v4.0
         with:
@@ -64,7 +70,7 @@ jobs:
           container-registry-password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "替换deploy.yaml中的image占位符"
-        run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.GITHUB_RE:10 }}#' deploy.yaml
+        run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.GITHUB_REF:10 }}#' deploy.yaml
         
       - name: "部署到k8s集群"
         uses: Azure/k8s-deploy@v4.7
