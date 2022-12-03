@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: hello
+  name: __NAMESPACE__
 ---    
 # https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello
-  namespace: hello
+  namespace: __NAMESPACE__
   labels:
     app:  hello
 spec:
@@ -75,7 +75,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hello
-  namespace: hello
+  namespace: __NAMESPACE__
 spec:
   selector:
     app: hello
@@ -91,7 +91,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: hello-ingress
-  namespace: hello
+  namespace: __NAMESPACE__
 spec:
   rules:
   - host: baozaolaoba.top
