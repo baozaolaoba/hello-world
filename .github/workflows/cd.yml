@@ -54,11 +54,18 @@ jobs:
           method: kubeconfig
           # Contents of kubeconfig file
           kubeconfig: ${{ secrets.KUBECONFIG }}
-        
-      - name: "下载image"
-        run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+
+      - name: "创建k8s密钥"
+        uses: Azure/k8s-create-secret@v4.0
+        with:
+          # Name of the secret. You can use this secret name in the Kubernetes YAML configuration file.
+          secret-name: docker-login
+          # Container Registry URL
+          container-registry-url: ${{ env.REGISTRY }}
+          # Container Registry user name
+          container-registry-username: ${{ github.actor }}
+          # Container Registry password
+          container-registry-password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "替换deploy.yaml中的image占位符"
         run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}#' deploy.yaml
@@ -72,7 +79,13 @@ jobs:
           manifests: deploy.yaml
           # Fully qualified resource URL of the image(s) to be used for substitutions on the manifest files Example: contosodemo.azurecr.io/helloworld:test
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
-          pull-images: false
+          pull-images: true
           # deploy, promote, or reject
           action: deploy
-      
+          # Name of a docker-registry secret that has already been set up within the cluster. Each of these secret names are added under imagePullSecrets field for the workloads found in the input manifest files
+          imagepullsecrets: docker-login
+          # Deploy when a previous deployment already exists. If true then --force argument is added to the apply command
+          force: true
+          # Annotate the target namespace
+          private-cluster: false
+
