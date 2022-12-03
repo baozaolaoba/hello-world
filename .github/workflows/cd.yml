@@ -69,7 +69,14 @@ jobs:
 
       - name: "替换deploy.yaml中的image占位符"
         run: sed -i 's#__IMAGE__#${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}#' deploy.yaml
-        
+
+      - name: "登录github容器注册中心"
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: "部署到k8s集群"
         uses: Azure/k8s-deploy@v4.7
         with:
@@ -82,8 +89,6 @@ jobs:
           pull-images: true
           # deploy, promote, or reject
           action: deploy
-          # Name of a docker-registry secret that has already been set up within the cluster. Each of these secret names are added under imagePullSecrets field for the workloads found in the input manifest files
-          imagepullsecrets: docker-login
           # Deploy when a previous deployment already exists. If true then --force argument is added to the apply command
           force: true
           # Annotate the target namespace
