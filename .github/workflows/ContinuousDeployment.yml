@@ -90,7 +90,7 @@ jobs:
       - name: "替换kubernetes部署配置中的占位符"
         run: |
           sed -i 's#__IMAGE__#${{ env.CONTAINER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.git-tag.outputs.tag }}#' `grep __IMAGE__ -rl ${{ env.YAML_DIR }}`
-          sed -i 's#__NAMESPACE__#${{ env.NAMESPACE }}#' `grep __NAMESPACE__ -rl {{ env.YAML_DIR }}`
+          sed -i 's#__NAMESPACE__#${{ env.NAMESPACE }}#' `grep __NAMESPACE__ -rl ${{ env.YAML_DIR }}`
           
       # 部署, 和github交互的token要有写权限,默认的github.token只有读权限;另外namespace会做校验,需要和上面保持一致
       - name: "部署到k8s集群"
