@@ -22,5 +22,5 @@ WORKDIR /baozaolaoba
 COPY --from=builder /baozaolaoba/out /baozaolaoba/out
 
 # expose port
-EXPOSE 8022/TCP
+EXPOSE 80/TCP
 ENTRYPOINT [ "/baozaolaoba/out" ]
