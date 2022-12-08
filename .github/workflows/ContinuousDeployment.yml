@@ -94,7 +94,7 @@ jobs:
           
       # 部署, 和github交互的token要有写权限,默认的github.token只有读权限;另外namespace会做校验,需要和上面保持一致
       - name: "部署到k8s集群"
-        uses: Azure/k8s-deploy@v4.7
+        uses: jaiveerk/k8s-deploy@create-pull-request/patch
         with:
           # Choose the target Kubernetes namespace. If the namespace is not provided, the commands will run in the default namespace.
           namespace: ${{ env.NAMESPACE }}
