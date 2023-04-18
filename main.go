@@ -15,7 +15,10 @@ func main() {
 		//nolint
 		io.WriteString(w, time.Now().Format(TimeFormat)+" 你好,暴躁老爸!\n")
 	}
+	
+	certVerifyingHandler := func(w http.ResponseWriter, req *http.Request) {}
 
 	http.HandleFunc("/hello", helloHandler)
+	http.HandleFunc("/", certVerifyingHandler)
 	log.Fatal(http.ListenAndServe(":80", nil))
 }
